@@ -1,4 +1,3 @@
-use lazy_static::{__Deref, lazy_static};
 use log::error;
 use read_input::prelude::*;
 use simplelog::{ColorChoice, Config, LevelFilter, TermLogger, TerminalMode};
@@ -6,23 +5,45 @@ use std::collections::{HashMap, HashSet};
 use std::error::Error;
 use std::fs::File;
 use std::io::{BufReader, BufWriter};
+use std::ops::Deref;
 use std::path::Path;
 use std::sync::Mutex;
+use serde::{Serialize, Deserialize};
+use once_cell::sync::Lazy;
+use dotenv::dotenv;
+use std::env;
 
 const DATABASE_FILE: &str = "db.txt";
 
-lazy_static! {
-    static ref GRADE_DATABASE: Mutex<HashMap<String, Vec<f32>>> = {
-        let map = read_database_from_file(DATABASE_FILE).unwrap_or(HashMap::new());
-        Mutex::new(map)
-    };
-    static ref PROF_CREDENTIALS: HashSet<(String, String)> = {
-        let mut set = HashSet::new();
-        set.insert(("Danono".to_string(), "3lves4ndH0b1ts".to_string()));
-        set.insert(("Duc".to_string(), "l4crypt0C3stR1g0l0".to_string()));
-        set
-    };
+#[derive(Serialize, Deserialize)]
+struct DB {
+    users_grades: Mutex<HashMap<String, Vec<f32>>>,
+    teachers_account: Mutex<HashSet<(String, String)>>,
 }
+
+impl DB {
+    pub fn new(users_grades: Mutex<HashMap<String, Vec<f32>>>, teachers_account: Mutex<HashSet<(String, String)>>) -> Self{
+        DB {
+            users_grades,
+            teachers_account,
+        }
+    }
+}
+
+static DB_INSTANCE: Lazy<DB> = Lazy::new(||{
+    let map = read_database_from_file(DATABASE_FILE).unwrap_or(HashMap::new());
+
+    let mut set = HashSet::new();
+    set.insert(("Danono".to_string(), "3lves4ndH0b1ts".to_string()));
+    set.insert(("Duc".to_string(), "l4crypt0C3stR1g0l0".to_string()));
+
+    DB::new(Mutex::new(map), Mutex::new(set))
+});
+
+// static SECRET: Lazy<String> = Lazy::new(|| {
+//     dotenv().ok();
+//     env::var("SECRET").unwrap()
+// });
 
 fn read_database_from_file<P: AsRef<Path>>(
     path: P,
@@ -52,7 +73,7 @@ fn student_action(teacher: &mut bool) {
         1 => show_grades("Enter your name. Do NOT lie!"),
         2 => become_teacher(teacher),
         0 => quit(),
-        _ => panic!("impossible choice"),
+        _ => error!("impossible choice"),
     }
 }
 
@@ -63,38 +84,36 @@ fn teacher_action() {
         1 => show_grades("Enter the name of the user of which you want to see the grades:"),
         2 => enter_grade(),
         0 => quit(),
-        _ => panic!("impossible choice"),
+        _ => error!("impossible choice"),
     }
 }
 
 fn show_grades(message: &str) {
     println!("{}", message);
     let name: String = input().get();
-    println!("Here are the grades of user {}", name);
-    let db = GRADE_DATABASE.lock().unwrap();
+
+    let db = DB_INSTANCE.users_grades.lock().unwrap();
     match db.get(&name) {
         Some(grades) => {
+            println!("Here are the grades of user {}", name);
             println!("{:?}", grades);
             println!(
                 "The average is {}",
                 (grades.iter().sum::<f32>()) / ((*grades).len() as f32)
             );
         }
-        None => panic!("User not in system"),
+        None => println!("User not in system"),
     };
 }
 
 fn become_teacher(teacher: &mut bool) {
     let username: String = input::<String>().msg("Enter your username: ").get();
     let password: String = input().msg("Enter your password: ").get();
-    if PROF_CREDENTIALS.contains(&(username.clone(), password.clone())) {
+    if DB_INSTANCE.teachers_account.lock().unwrap().contains(&(username, password)) {
         *teacher = true;
     } else {
         *teacher = false;
-        error!(
-            "Failed teacher login with username {} and password {}",
-            username, password
-        );
+        error!("Wrong teacher credentials");
     }
 }
 
@@ -103,7 +122,7 @@ fn enter_grade() {
     let name: String = input().get();
     println!("What is the new grade of the student?");
     let grade: f32 = input().add_test(|x| *x >= 0.0 && *x <= 6.0).get();
-    let mut map = GRADE_DATABASE.lock().unwrap();
+    let mut map = DB_INSTANCE.users_grades.lock().unwrap();
     match map.get_mut(&name) {
         Some(v) => v.push(grade),
         None => {
@@ -116,21 +135,24 @@ fn quit() {
     println!("Saving database!");
     let file = File::create(DATABASE_FILE).unwrap();
     let writer = BufWriter::new(file);
-    serde_json::to_writer(writer, GRADE_DATABASE.lock().unwrap().deref()).unwrap();
+    serde_json::to_writer(writer, DB_INSTANCE.deref()).unwrap();
     std::process::exit(0);
 }
 
 fn main() {
+    dotenv().ok();
     TermLogger::init(
         LevelFilter::Trace,
         Config::default(),
         TerminalMode::Stderr,
         ColorChoice::Auto,
-    )
-    .unwrap();
+    ).unwrap();
     welcome();
-    let mut teacher = false;
+    println!("Are you a teacher or a student");
+    let choice = input().inside(['t', 's']).get();
+    let mut is_teacher = choice == 't';
+
     loop {
-        menu(&mut teacher);
+        menu(&mut is_teacher);
     }
 }
