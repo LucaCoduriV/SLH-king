@@ -1,1 +1,0 @@
-{"users_grades":{"luca":[6.0]},"teachers_account":[["Danono","3lves4ndH0b1ts"],["Duc","l4crypt0C3stR1g0l0"]]}
