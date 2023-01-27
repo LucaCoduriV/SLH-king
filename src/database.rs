@@ -5,9 +5,8 @@ use std::path::Path;
 use std::sync::Mutex;
 use serde::{Serialize, Deserialize};
 use std::error::Error;
-use std::{env, fs, str};
-use std::ptr::hash;
-use crate::models::{Credentials, Student, Teacher, User};
+use std::{env, str};
+use crate::models::{Credentials, Student, Teacher};
 use dryoc::dryocsecretbox::*;
 
 #[derive(Serialize, Deserialize, Default)]
@@ -72,7 +71,7 @@ impl DB {
                                <&[u8; 24]>::try_from(nonce.as_bytes()).unwrap(),
         );
 
-        writer.write(&*data);
+        writer.write(&*data)?;
         Ok(())
     }
 }

@@ -5,6 +5,8 @@ use std::fmt::{Debug, Display, Formatter};
 use crate::auth::AuthError::{UserDoesNotExist, WrongPassword};
 use crate::{database, models};
 
+static RANDOM_HASH: &str = "$argon2i$v=19$m=16,t=2,p=1$OGxkbkpGcHZWTzlkNU00WQ$FTyekoCrFSYE08v5FLA8N";
+
 use argon2::{
     password_hash::{
         rand_core::OsRng,
@@ -49,6 +51,7 @@ fn login(users: &mut HashMap<String, impl models::User>, username: &str, passwor
         return verify_password(password, (*user).get_password().as_str())
             .map(|_| ()).or(Err(WrongPassword));
     }
+    verify_password(password, RANDOM_HASH).ok();
     Err(UserDoesNotExist)
 }
 

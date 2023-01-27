@@ -55,7 +55,7 @@ fn ask_creds() -> Result<AccountType, AuthError> {
 
 fn menu(account_type: &AccountType) {
     while let Ok(_) = match account_type {
-        AccountType::Teacher(username) => teacher_action(username),
+        AccountType::Teacher(_) => teacher_action(),
         AccountType::Student(username) => student_action(username),
     }{}
 }
@@ -71,7 +71,7 @@ fn student_action(username: &String) -> Result<(), ()> {
     }
 }
 
-fn teacher_action(username: &String) -> Result<(), ()> {
+fn teacher_action() -> Result<(), ()> {
     println!("*****\n1: See grades of student\n2: Enter grades\n3: Logout\n0: Quit");
     let choice = input().inside(0..=3).msg("Enter Your choice: ").get();
     match choice {
