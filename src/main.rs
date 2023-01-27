@@ -15,15 +15,19 @@ use crate::auth::{AuthError, login_as_student, login_as_teacher};
 const DATABASE_FILE: &str = "db.json";
 
 static DB_INSTANCE: Lazy<database::DB> = Lazy::new(|| {
-    database::DB::from_file(DATABASE_FILE).unwrap_or_else(|_| {
+    database::DB::from_file(DATABASE_FILE, SECRET.as_str(), NONCE.as_str()).unwrap_or_else(|_| {
         eprintln!("Error while reading db file, using empty db");
-        database::DB::default()
+        database::DB::from_env()
     })
 });
 
-// static SECRET: Lazy<String> = Lazy::new(|| {
-//     env::var("SECRET").unwrap()
-// });
+static SECRET: Lazy<String> = Lazy::new(|| {
+    env::var("SECRET").unwrap()
+});
+
+static NONCE: Lazy<String> = Lazy::new(|| {
+    env::var("NONCE").unwrap()
+});
 
 enum AccountType {
     Teacher(String),
@@ -114,7 +118,7 @@ fn enter_grade() {
 
 fn quit() {
     println!("Saving database!");
-    if let Ok(_) = DB_INSTANCE.save(DATABASE_FILE) {
+    if let Ok(_) = DB_INSTANCE.save(DATABASE_FILE, SECRET.as_str(), NONCE.as_str()) {
         std::process::exit(0);
     }
     std::process::exit(1);
