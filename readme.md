@@ -10,8 +10,6 @@
 
 - Error management: The original code did not handle errors in a consistent or secure manner, often panicking and revealing sensitive information. I added proper error handling and ensured that any errors that occur do not reveal sensitive information.
 
-- Input/output validation: The original code did not validate user input, making it vulnerable to various types of attacks such as SQL injection. I added input validation to ensure that only valid input is accepted, and output validation to ensure that any sensitive information is displayed only to authorized users.
-
 2. High-level report:
 - Implemented a login system for both students and teachers, with proper authentication and authorization.
 

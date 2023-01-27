@@ -96,6 +96,7 @@ fn teacher_action(username: &str) -> Result<(), ()> {
     match choice {
         1 => {
             let student_username: String = input().msg("Enter the name of the user of which you want to see the grades:").get();
+            info!("{} showing {}'s grades", username, student_username);
             return Ok(show_grades(student_username.as_str()));
         }
         2 => Ok(enter_grade(username)),
@@ -119,7 +120,10 @@ fn show_grades(username: &str) {
                 (student.grades.iter().sum::<f32>()) / ((*student.grades).len() as f32)
             );
         }
-        None => println!("User not in system"),
+        None => {
+            println!("User not in system");
+            warn!("user {} not in system", username);
+        },
     };
 }
 
@@ -131,7 +135,7 @@ fn enter_grade(username: &str) {
     let mut map = DB_INSTANCE.students.lock().unwrap();
     match map.get_mut(&name) {
         Some(v) => {
-            info!("{} added {} to {}'s grades.", username, grade, name);
+            info!("{} added a grade to {}'s grades.", username, name);
             v.grades.push(grade)
         },
         None => {
