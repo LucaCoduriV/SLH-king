@@ -39,8 +39,7 @@ fn welcome() {
 }
 
 fn ask_creds() -> Result<AccountType, AuthError> {
-    println!("Are you a teacher or a student");
-    let choice = input().inside(['t', 's']).get();
+    let choice = input().inside(['t', 's']).msg("Are you a teacher or a student ? t/s: ").get();
     let is_teacher = choice == 't';
 
     println!("Enter your username:");
