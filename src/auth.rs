@@ -46,10 +46,6 @@ pub fn login_as_teacher(db: &database::DB, username: &str, password: &str) -> Re
 
 fn login(users: &mut HashMap<String, impl models::User>, username: &str, password: &str) -> Result<(), AuthError> {
     if let Some(user) = users.get_mut(username) {
-        // if let Ok(_) = verify_password(password, (*user).get_password().as_str())  {
-        //     return Ok(());
-        // }
-        // return Err(WrongPassword);
         return verify_password(password, (*user).get_password().as_str())
             .map(|_| ()).or(Err(WrongPassword));
     }
