@@ -16,7 +16,7 @@ const DATABASE_FILE: &str = "db.json";
 
 static DB_INSTANCE: Lazy<database::DB> = Lazy::new(|| {
     database::DB::from_file(DATABASE_FILE, SECRET.as_str(), NONCE.as_str()).unwrap_or_else(|_| {
-        eprintln!("Error while reading db file, using empty db");
+        error!("Couldn't read {}, creating a new db from env file", DATABASE_FILE);
         database::DB::from_env()
     })
 });
@@ -83,7 +83,10 @@ fn student_action(username: &String) -> Result<(), ()> {
         1 => Ok(show_grades(username.as_str())),
         2 => Err(()),
         0 => Ok(quit()),
-        _ => Ok(error!("impossible choice")),
+        _ => {
+            error!("Teacher {} tried to use an impossible choice", username);
+            Ok(())
+        },
     }
 }
 
@@ -98,7 +101,10 @@ fn teacher_action(username: &str) -> Result<(), ()> {
         2 => Ok(enter_grade(username)),
         3 => Err(()),
         0 => Ok(quit()),
-        _ => Ok(error!("impossible choice")),
+        _ => {
+            error!("Student {} tried to use an impossible choice", username);
+            Ok(())
+        },
     }
 }
 
