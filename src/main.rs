@@ -4,13 +4,13 @@ mod database;
 mod models;
 mod auth;
 
-use log::error;
+use log::{error, info, warn};
 use read_input::prelude::*;
-use simplelog::{ColorChoice, Config, LevelFilter, TermLogger, TerminalMode};
 use once_cell::sync::Lazy;
 use dotenv::dotenv;
 use std::env;
 use crate::auth::{AuthError, login_as_student, login_as_teacher};
+use log4rs;
 
 const DATABASE_FILE: &str = "db.json";
 
@@ -48,16 +48,32 @@ fn ask_creds() -> Result<AccountType, AuthError> {
     let password: String = input().get(); // cacher le mot de passe est mieux, mais pas obligé pour ce labo.
 
     match is_teacher {
-        true => { login_as_teacher(&DB_INSTANCE, username.as_str(), password.as_str()).map(|_| AccountType::Teacher(username)) }
-        false => { login_as_student(&DB_INSTANCE, username.as_str(), password.as_str()).map(|_| AccountType::Student(username)) }
+        true => {
+            match login_as_teacher(&DB_INSTANCE, &username.as_str(), password.as_str()) {
+                Err(e) => Err(e),
+                Ok(_) => {
+                    info!("User {} logged in as teacher.", username);
+                    Ok(AccountType::Teacher(username))
+                }
+            }
+        }
+        false => {
+            match login_as_student(&DB_INSTANCE, username.as_str(), password.as_str()) {
+                Err(e) => Err(e),
+                Ok(_) => {
+                    info!("User {} logged in as student", username);
+                    Ok(AccountType::Student(username))
+                }
+            }
+        }
     }
 }
 
 fn menu(account_type: &AccountType) {
     while let Ok(_) = match account_type {
-        AccountType::Teacher(_) => teacher_action(),
+        AccountType::Teacher(username) => teacher_action(username),
         AccountType::Student(username) => student_action(username),
-    }{}
+    } {}
 }
 
 fn student_action(username: &String) -> Result<(), ()> {
@@ -71,15 +87,15 @@ fn student_action(username: &String) -> Result<(), ()> {
     }
 }
 
-fn teacher_action() -> Result<(), ()> {
+fn teacher_action(username: &str) -> Result<(), ()> {
     println!("*****\n1: See grades of student\n2: Enter grades\n3: Logout\n0: Quit");
     let choice = input().inside(0..=3).msg("Enter Your choice: ").get();
     match choice {
         1 => {
             let student_username: String = input().msg("Enter the name of the user of which you want to see the grades:").get();
-            return Ok(show_grades(student_username.as_str()))
-        },
-        2 => Ok(enter_grade()),
+            return Ok(show_grades(student_username.as_str()));
+        }
+        2 => Ok(enter_grade(username)),
         3 => Err(()),
         0 => Ok(quit()),
         _ => Ok(error!("impossible choice")),
@@ -101,15 +117,20 @@ fn show_grades(username: &str) {
     };
 }
 
-fn enter_grade() {
+fn enter_grade(username: &str) {
     println!("What is the name of the student?");
     let name: String = input().get();
     println!("What is the new grade of the student?");
     let grade: f32 = input().add_test(|x| *x >= 0.0 && *x <= 6.0).get();
     let mut map = DB_INSTANCE.students.lock().unwrap();
     match map.get_mut(&name) {
-        Some(v) => v.grades.push(grade),
+        Some(v) => {
+            info!("{} added {} to {}'s grades.", username, grade, name);
+            v.grades.push(grade)
+        },
         None => {
+            warn!("{} tried to add {} to {}'s grades, but user does not exist.",
+                username, grade, name);
             eprintln!("user does not exist");
         }
     };
@@ -125,12 +146,7 @@ fn quit() {
 
 fn main() {
     dotenv().ok();
-    TermLogger::init(
-        LevelFilter::Trace,
-        Config::default(),
-        TerminalMode::Stderr,
-        ColorChoice::Auto,
-    ).unwrap();
+    log4rs::init_file("./log4rs.yaml", Default::default()).unwrap();
 
     welcome();
     loop {

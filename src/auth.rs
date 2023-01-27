@@ -14,6 +14,7 @@ use argon2::{
     },
     Argon2,
 };
+use log::warn;
 use crate::models::User;
 
 #[derive(Debug)]
@@ -49,8 +50,13 @@ pub fn login_as_teacher(db: &database::DB, username: &str, password: &str) -> Re
 fn login(users: &mut HashMap<String, impl models::User>, username: &str, password: &str) -> Result<(), AuthError> {
     if let Some(user) = users.get_mut(username) {
         return verify_password(password, (*user).get_password().as_str())
-            .map(|_| ()).or(Err(WrongPassword));
+            .map(|_| ())
+            .or_else(|_| {
+                warn!("Invalid password for user {}", username);
+                Err(WrongPassword)
+            });
     }
+    warn!("Username {} not found", username);
     verify_password(password, RANDOM_HASH).ok();
     Err(UserDoesNotExist)
 }
