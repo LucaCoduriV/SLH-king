@@ -7,7 +7,7 @@ pub struct Teacher {
 
 #[derive(Serialize, Deserialize)]
 pub struct Student {
-    creds: Credentials,
+    pub(crate) creds: Credentials,
     pub grades: Vec<f32>,
 }
 

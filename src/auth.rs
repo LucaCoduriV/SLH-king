@@ -5,6 +5,14 @@ use std::fmt::{Debug, Display, Formatter};
 use crate::auth::AuthError::{UserDoesNotExist, WrongPassword};
 use crate::{database, models};
 
+use argon2::{
+    password_hash::{
+        rand_core::OsRng,
+        PasswordHash, PasswordHasher, PasswordVerifier, SaltString
+    },
+    Argon2
+};
+
 #[derive(Debug)]
 pub enum AuthError {
     WrongPassword,
@@ -43,4 +51,32 @@ fn login(users: &mut HashMap<String, impl models::User>, username: &str, passwor
         return Err(WrongPassword);
     }
     Err(UserDoesNotExist)
+}
+
+fn hash_password(password: &str) -> Result<String, ()>{
+    let salt = SaltString::generate(&mut OsRng);
+
+    let argon2 = Argon2::default();
+
+    let hashed_password = argon2.hash_password(password.as_bytes(), &salt).or(Err(()))?.to_string();
+
+    Ok(hashed_password)
+}
+
+fn verify_password(password: &str, hashed_password:&str) -> Result<(), ()> {
+    let parsed_hash = PasswordHash::new(&hashed_password).or(Err(()))?;
+    Argon2::default().verify_password(password.as_bytes(), &parsed_hash).or(Err(()))
+}
+
+#[test]
+fn hash_password_test(){
+    let result = hash_password("1234");
+    if let Ok(hashed_password) = result {
+        println!("{}", hashed_password);
+        if let Ok(_) = verify_password("1234", hashed_password.as_str()) {
+            return;
+        }
+    }
+
+    panic!();
 }

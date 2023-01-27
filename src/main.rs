@@ -1,3 +1,5 @@
+extern crate core;
+
 mod database;
 mod models;
 mod auth;
@@ -19,9 +21,9 @@ static DB_INSTANCE: Lazy<database::DB> = Lazy::new(|| {
     })
 });
 
-static SECRET: Lazy<String> = Lazy::new(|| {
-    env::var("SECRET").unwrap()
-});
+// static SECRET: Lazy<String> = Lazy::new(|| {
+//     env::var("SECRET").unwrap()
+// });
 
 enum AccountType {
     Teacher(String),
@@ -32,10 +34,10 @@ fn welcome() {
     println!("Welcome to KING: KING Is Not GAPS");
 }
 
-fn ask_creds() -> Result<AccountType, AuthError>{
+fn ask_creds() -> Result<AccountType, AuthError> {
     println!("Are you a teacher or a student");
     let choice = input().inside(['t', 's']).get();
-    let mut is_teacher = choice == 't';
+    let is_teacher = choice == 't';
 
     println!("Enter your username:");
     let username: String = input().get();
@@ -43,48 +45,49 @@ fn ask_creds() -> Result<AccountType, AuthError>{
     let password: String = input().get(); // cacher le mot de passe est mieux, mais pas obligé pour ce labo.
 
     match is_teacher {
-        true => {login_as_teacher(&DB_INSTANCE, username.as_str(), password.as_str()).map(|_| AccountType::Teacher(username))}
-        false => {login_as_student(&DB_INSTANCE, username.as_str(), password.as_str()).map(|_| AccountType::Student(username))}
+        true => { login_as_teacher(&DB_INSTANCE, username.as_str(), password.as_str()).map(|_| AccountType::Teacher(username)) }
+        false => { login_as_student(&DB_INSTANCE, username.as_str(), password.as_str()).map(|_| AccountType::Student(username)) }
     }
 }
 
 fn menu(account_type: &AccountType) {
-    match account_type {
+    while let Ok(_) = match account_type {
         AccountType::Teacher(username) => teacher_action(username),
         AccountType::Student(username) => student_action(username),
-    }
+    }{}
 }
 
-fn student_action(username: &String) {
+fn student_action(username: &String) -> Result<(), ()> {
     println!("*****\n1: See your grades\n2: Logout\n0: Quit");
     let choice = input().inside(0..=2).msg("Enter Your choice: ").get();
     match choice {
-        1 => show_grades(username.as_str()),
-        // 2 => logout(),
-        0 => quit(),
-        _ => error!("impossible choice"),
+        1 => Ok(show_grades(username.as_str())),
+        2 => Err(()),
+        0 => Ok(quit()),
+        _ => Ok(error!("impossible choice")),
     }
 }
 
-fn teacher_action(username: &String) {
-    println!("*****\n1: See grades of student\n2: Enter grades\n0: Quit");
-    let choice = input().inside(0..=2).msg("Enter Your choice: ").get();
+fn teacher_action(username: &String) -> Result<(), ()> {
+    println!("*****\n1: See grades of student\n2: Enter grades\n3: Logout\n0: Quit");
+    let choice = input().inside(0..=3).msg("Enter Your choice: ").get();
     match choice {
-        1 => show_grades("Enter the name of the user of which you want to see the grades:"),
-        2 => enter_grade(),
-        0 => quit(),
-        _ => error!("impossible choice"),
+        1 => {
+            let student_username: String = input().msg("Enter the name of the user of which you want to see the grades:").get();
+            return Ok(show_grades(student_username.as_str()))
+        },
+        2 => Ok(enter_grade()),
+        3 => Err(()),
+        0 => Ok(quit()),
+        _ => Ok(error!("impossible choice")),
     }
 }
 
-fn show_grades(message: &str) {
-    println!("{}", message);
-    let name: String = input().get();
-
+fn show_grades(username: &str) {
     let db = DB_INSTANCE.students.lock().unwrap();
-    match db.get(&name) {
+    match db.get(username) {
         Some(student) => {
-            println!("Here are the grades of user {}", name);
+            println!("Here are the grades of user {}", username);
             println!("{:?}", student.grades);
             println!(
                 "The average is {}",
