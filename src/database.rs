@@ -6,7 +6,8 @@ use std::sync::Mutex;
 use serde::{Serialize, Deserialize};
 use std::error::Error;
 use std::{env, fs, str};
-use crate::models::{Credentials, Student, Teacher};
+use std::ptr::hash;
+use crate::models::{Credentials, Student, Teacher, User};
 use dryoc::dryocsecretbox::*;
 
 #[derive(Serialize, Deserialize, Default)]
@@ -127,7 +128,9 @@ fn read_users_from_env() -> (Vec<Teacher>, Vec<Student>) {
         }
     };
 
-    (teachers, students)
+
+    (teachers.into_iter().map(super::auth::hash_password_inplace).collect(),
+     students.into_iter().map(super::auth::hash_password_inplace).collect())
 }
 
 #[test]

@@ -20,6 +20,8 @@ pub(crate) struct Credentials {
 pub trait User {
     fn get_username(&self) -> String;
     fn get_password(&self) -> String;
+    fn set_username(&mut self, username:&str);
+    fn set_password(&mut self, password:&str);
 }
 
 impl User for Teacher {
@@ -30,6 +32,14 @@ impl User for Teacher {
     fn get_password(&self) -> String {
         self.creds.password.clone()
     }
+
+    fn set_username(&mut self, username: &str) {
+        self.creds.username = String::from(username);
+    }
+
+    fn set_password(&mut self, password: &str) {
+        self.creds.password = String::from(password);
+    }
 }
 
 impl User for Student {
@@ -39,5 +49,13 @@ impl User for Student {
 
     fn get_password(&self) -> String {
         self.creds.password.clone()
+    }
+
+    fn set_username(&mut self, username: &str) {
+        self.creds.username = String::from(username);
+    }
+
+    fn set_password(&mut self, password: &str) {
+        self.creds.password = String::from(password);
     }
 }
