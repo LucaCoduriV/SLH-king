@@ -38,3 +38,6 @@ that every struct that implements it has a getter and a setter to the credential
 It was a bit redundant to write the same code for each struct, so I decided to 
 create my first macro to solve that problem. I am not sure if it was the best way,
 but it works.
+
+The .env contains user's that are used only to create the db. Once the db is 
+created, users can be removed from the .env file.
