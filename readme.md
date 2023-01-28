@@ -29,3 +29,12 @@
 The changes made should allow the application to continue to function as intended,
 allowing for the adding and viewing of grades, and separating the functionality for
 students and teachers.
+
+I did not implement casbin because it wasn't really necessary. I use two 
+different workflow for the teacher and the student.
+
+I tried to use some more advanced features of Rust. I created a User trait so 
+that every struct that implements it has a getter and a setter to the credentials.
+It was a bit redundant to write the same code for each struct, so I decided to 
+create my first macro to solve that problem. I am not sure if it was the best way,
+but it works.
