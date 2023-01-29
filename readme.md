@@ -19,7 +19,9 @@
 - Encryption: The original code did not implement any encryption, leaving sensitive
   data such as student grades and teacher credentials vulnerable to being
   compromised. I added encryption for both the student grades and the teacher
-  credentials, to protect them from unauthorized access.
+  credentials, to protect them from unauthorized access. `Note`: Reading db.json may 
+  fail if the database is very large. The reason is that I need to read the 
+  entire DB into memory to encrypt/decrypt it.
 
 - Error management: The original code did not handle errors in a consistent or secure
   manner, often panicking and revealing sensitive information. I added proper error
